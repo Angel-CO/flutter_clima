@@ -1,16 +1,47 @@
 import 'package:flutter/material.dart';
-
-import 'cities_screen.dart';
+import 'package:flutter_clima/data/data_constants.dart';
+import 'package:flutter_clima/model/city.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'list_cities_screen.dart';
 
 class HomeScreem extends StatelessWidget {
+  final cityName = TextEditingController();
+  List<City> cities;
 
-  void _goToCitiesScreen(BuildContext context){
+  String city = '';
+  void _goToCitiesScreen(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => CitiesScreem(),
+        builder: (_) => ListCitiesScreen(cities),
       ),
     );
   }
+
+  void searchCities(BuildContext context) async {
+    
+    String _url = api + 'search/?query=' + city;
+    print(_url);
+    Uri url = Uri.parse(_url);
+    final response = await http.get(url);
+    final data = jsonDecode(response.body) as List;
+    cities = data.map((e) => City.fromJson(e)).toList();
+
+    if(cities.length > 0){
+      _goToCitiesScreen(context);
+    }else{
+      showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Alerta"),
+          content: Text("No se encontraron coincidencias"),
+        );
+      }
+    );
+    }
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,14 +49,14 @@ class HomeScreem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            height: 60,
+            height: 50,
           ),
           Image.asset(
             'assets/images/logo.png',
             height: 100,
           ),
           SizedBox(
-            height: 30,
+            height: 10,
           ),
           Center(
             child: Text(
@@ -41,17 +72,24 @@ class HomeScreem extends StatelessWidget {
           ),
           Center(
             child: Text(
-              'Consulte el clima del\n   lugar que desee',
+              'Busque una ciudad',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 15,
               ),
             ),
           ),
+          Container(
+            padding: EdgeInsets.all(15),
+            child: TextField(
+              controller: cityName,
+              decoration: InputDecoration(labelText: "Ciudad"),
+            ),
+          ),
           SizedBox(
-            height: 60,
+            height: 20,
           ),
           Container(
-            width: 100,
+            width: 50,
             child: RaisedButton(
               color: Colors.blue,
               elevation: 30,
@@ -59,13 +97,32 @@ class HomeScreem extends StatelessWidget {
                 borderRadius: BorderRadius.circular(15.0),
               ),
               child: Text(
-                'Iniciar',
+                'Buscar',
                 style: TextStyle(
                   fontSize: 20,
                   color: Colors.white,
                 ),
               ),
-              onPressed: () => _goToCitiesScreen(context),
+              onPressed: () => {
+                if (cityName.text == '')
+                  {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text("Alerta"),
+                          content: Text("Ingrese una ciudad"),
+                        );
+                      }
+                    )
+                  }
+                else
+                  {
+                    city = cityName.text,
+                    searchCities(context),
+                    
+                  }
+              },
             ),
           ),
         ],
